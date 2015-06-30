@@ -39,3 +39,10 @@ func main() {
     fmt.Println(query)
 }
 ```
+
+Result:
+
+```
+onix:stuff webRat$ ./stuff
+SELECT * FROM TableName WHERE 1 = 1 LIMIT 0
+```

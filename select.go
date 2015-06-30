@@ -140,15 +140,14 @@ func (q *QueryStatement) Assemble() (string, error) {
 
 	// Assemble INNER JOINS
 	if q.hasJoins {
-		sql.WriteString(" ")
+		sql.WriteString(" INNER JOIN ")
 		numnOfJoins := len(q.innerjoins) - 1
 		for i, ij := range q.innerjoins {
 			sql.WriteString(ij)
 			if i != numnOfJoins {
-				sql.WriteString(" ")
+				sql.WriteString(" INNER JOIN ")
 			}
 		}
-		//sql.WriteString(innerJoins.String())
 	}
 
 	// Assemble WHERE statement

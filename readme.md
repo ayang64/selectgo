@@ -11,3 +11,31 @@ This work is based off my [ColdFusion project](https://github.com/webRat/select)
 
 ## LICENSE
 Apache
+
+## Examples
+Basic Example:
+
+```
+package main
+
+import (
+    "fmt"
+
+    . "github.com/webRat/selectgo"
+)
+
+func main() {
+    sql := NewQueryStatement()
+    sql.Select([]string{"*"}).
+        From("TableName").
+        Where("1 = 1")
+
+    query, err := sql.Assemble()
+
+    if err != nil {
+        fmt.Println(err)
+    }
+
+    fmt.Println(query)
+}
+```

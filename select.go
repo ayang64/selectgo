@@ -2,43 +2,53 @@ package selectgo
 
 import (
 	"bytes"
+	"errors"
 	"strconv"
+	"strings"
+)
+
+var (
+	errSelectNoSelect       = errors.New("No Select statement prepared.")
+	errSelectContainsBlanks = errors.New("Select statement contains blanks")
+)
+
+const (
+	andState = iota
+	orState
 )
 
 // QueryStatement is a simple container that builds out a simple select statement that's eventually going to grow.
 type QueryStatement struct {
-	selectcolumns   []string
-	hasSelection    bool
-	fromtable       string
-	hasTable        bool
-	innerjoins      []string
-	hasJoins        bool
-	where           string
-	hasWhere        bool
-	andwhere        []string
-	hasAndWhere     bool
-	offset          int
-	hasOffset       bool
-	useOffset       bool
-	hasRowcount     bool
-	rowcount        int
-	rowcountCeiling int
-	useRowcount     bool
+	selectcolumns       []string
+	hasSelection        bool
+	fromtable           string
+	hasTable            bool
+	innerjoins          []string
+	hasJoins            bool
+	where               string
+	hasWhere            bool
+	conditionalWhere    []wheretype
+	hasConditionalWhere bool
+	offset              int
+	hasOffset           bool
+	useOffset           bool
+	hasRowcount         bool
+	rowcount            int
+	useRowcount         bool
 }
 
 // NewQueryStatement returns a new instance of the select statement
 func NewQueryStatement() *QueryStatement {
 	return &QueryStatement{
-		rowcountCeiling: 100,
-		useRowcount:     true,
-		useOffset:       true,
-		hasSelection:    false,
-		hasTable:        false,
-		hasJoins:        false,
-		hasWhere:        false,
-		hasAndWhere:     false,
-		hasOffset:       false,
-		hasRowcount:     false,
+		useRowcount:         false,
+		useOffset:           false,
+		hasSelection:        false,
+		hasTable:            false,
+		hasJoins:            false,
+		hasWhere:            false,
+		hasConditionalWhere: false,
+		hasOffset:           false,
+		hasRowcount:         false,
 	}
 }
 
@@ -85,10 +95,30 @@ func (q *QueryStatement) Where(where string) *QueryStatement {
 // And continues to add to the where statement
 func (q *QueryStatement) And(param string) *QueryStatement {
 	if len(param) > 0 {
-		q.andwhere = append(q.andwhere, param)
+		q.hasConditionalWhere = true
+		q.addWhereConditional(andState, param)
 	}
 
 	return q
+}
+
+// Or continues to or conditional to the where statement
+func (q *QueryStatement) Or(param string) *QueryStatement {
+	if len(param) > 0 {
+		q.hasConditionalWhere = true
+		q.addWhereConditional(orState, param)
+	}
+
+	return q
+}
+
+func (q *QueryStatement) addWhereConditional(ctype int, value string) {
+	q.conditionalWhere = append(q.conditionalWhere, wheretype{ctype: ctype, value: value})
+}
+
+type wheretype struct {
+	ctype int
+	value string
 }
 
 // Offset adds offset to the query
@@ -119,16 +149,22 @@ func (q *QueryStatement) Limit(offset, rowcount int) *QueryStatement {
 // Assemble it all together into something that makes sense
 func (q *QueryStatement) Assemble() (string, error) {
 	var sql bytes.Buffer
+	if !q.hasSelection {
+		return "", errSelectNoSelect
+	}
 
 	sql.WriteString("SELECT ")
-	if q.hasSelection {
-		// Assemble Column selection
-		numOfColumns := len(q.selectcolumns) - 1
-		for i, col := range q.selectcolumns {
-			sql.WriteString(col)
+
+	// Assemble Column selection
+	numOfColumns := len(q.selectcolumns) - 1
+	for i, col := range q.selectcolumns {
+		if len(strings.TrimSpace(col)) > 0 {
+			sql.WriteString(strings.TrimSpace(col))
 			if i != numOfColumns {
 				sql.WriteString(", ")
 			}
+		} else {
+			return "", errSelectContainsBlanks
 		}
 	}
 
@@ -155,14 +191,16 @@ func (q *QueryStatement) Assemble() (string, error) {
 		sql.WriteString(" WHERE ")
 		sql.WriteString(q.where)
 
-		if q.hasAndWhere {
-			numOfANDs := len(q.andwhere) - 1
-			sql.WriteString("AND ")
-			for i, w := range q.andwhere {
-				sql.WriteString(w)
-				if i != numOfANDs {
+		if q.hasConditionalWhere {
+			for _, cw := range q.conditionalWhere {
+				switch cw.ctype {
+				case andState:
 					sql.WriteString(" AND ")
+
+				case orState:
+					sql.WriteString(" OR ")
 				}
+				sql.WriteString(cw.value)
 			}
 		}
 	}
@@ -173,9 +211,8 @@ func (q *QueryStatement) Assemble() (string, error) {
 	}
 
 	// If we have a rowcount, does it conform to our ceiling?
-	if q.hasRowcount && (q.rowcount <= 0 || q.rowcount > q.rowcountCeiling) {
+	if q.hasRowcount && (q.rowcount < 1) {
 		q.useRowcount = false
-		q.rowcount = q.rowcountCeiling
 	}
 
 	if q.useRowcount {

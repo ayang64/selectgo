@@ -40,8 +40,6 @@ type QueryStatement struct {
 // NewQueryStatement returns a new instance of the select statement
 func NewQueryStatement() *QueryStatement {
 	return &QueryStatement{
-		useRowcount:         false,
-		useOffset:           false,
 		hasSelection:        false,
 		hasTable:            false,
 		hasJoins:            false,
@@ -205,20 +203,10 @@ func (q *QueryStatement) Assemble() (string, error) {
 		}
 	}
 
-	// Optional Stuff -- Offset, Rowcounts
-	if !q.hasOffset || q.offset <= 0 {
-		q.useOffset = false
-	}
-
-	// If we have a rowcount, does it conform to our ceiling?
-	if q.hasRowcount && (q.rowcount < 1) {
-		q.useRowcount = false
-	}
-
-	if q.useRowcount {
+	if q.hasRowcount {
 		sql.WriteString(" LIMIT ")
 		sql.WriteString(strconv.Itoa(q.rowcount))
-		if q.useOffset {
+		if q.hasOffset {
 			sql.WriteString(" OFFSET ")
 			sql.WriteString(strconv.Itoa(q.offset))
 		}

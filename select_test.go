@@ -24,6 +24,23 @@ func TestAssemble(t *testing.T) {
 			NewQueryStatement().Select([]string{"*"}).From("table"),
 			"SELECT * FROM table",
 		},
+
+		{
+			NewQueryStatement().Select([]string{"*"}).From("table").Limit(1, 50),
+			"SELECT * FROM table LIMIT 50 OFFSET 1",
+		},
+		{
+			NewQueryStatement().Select([]string{"*"}).From("table").Rowcount(50).Offset(1),
+			"SELECT * FROM table LIMIT 50 OFFSET 1",
+		},
+		{
+			NewQueryStatement().Select([]string{"*"}).From("table").Rowcount(50).Offset(0),
+			"SELECT * FROM table LIMIT 50",
+		},
+		{
+			NewQueryStatement().Select([]string{"*"}).From("table").Rowcount(0).Offset(0),
+			"SELECT * FROM table",
+		},
 	}
 
 	for _, s := range should {

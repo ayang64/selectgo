@@ -27,13 +27,15 @@ type QueryStatement struct {
 	hasJoins            bool
 	where               string
 	hasWhere            bool
+	hasOrderBy          bool
+	orderby             string
 	conditionalWhere    []wheretype
 	hasConditionalWhere bool
-	offset              int
+	offset              int64
 	hasOffset           bool
 	useOffset           bool
 	hasRowcount         bool
-	rowcount            int
+	rowcount            int64
 	useRowcount         bool
 }
 
@@ -47,6 +49,7 @@ func NewQueryStatement() *QueryStatement {
 		hasConditionalWhere: false,
 		hasOffset:           false,
 		hasRowcount:         false,
+		hasOrderBy:          false,
 	}
 }
 
@@ -119,8 +122,18 @@ type wheretype struct {
 	value string
 }
 
+// OrderBy adds "ORDER BY" to the query
+func (q *QueryStatement) OrderBy(orderby string) *QueryStatement {
+	if len(orderby) > 0 {
+		q.hasOrderBy = true
+		q.orderby = orderby
+	}
+
+	return q
+}
+
 // Offset adds offset to the query
-func (q *QueryStatement) Offset(offset int) *QueryStatement {
+func (q *QueryStatement) Offset(offset int64) *QueryStatement {
 	if offset > 0 {
 		q.hasOffset = true
 		q.offset = offset
@@ -129,7 +142,7 @@ func (q *QueryStatement) Offset(offset int) *QueryStatement {
 }
 
 // Rowcount adds rowcount to the query
-func (q *QueryStatement) Rowcount(rowcount int) *QueryStatement {
+func (q *QueryStatement) Rowcount(rowcount int64) *QueryStatement {
 	if rowcount > 0 {
 		q.hasRowcount = true
 		q.rowcount = rowcount
@@ -138,7 +151,7 @@ func (q *QueryStatement) Rowcount(rowcount int) *QueryStatement {
 }
 
 // Limit page and number of things we're limiting it too. This will overwrite Offset() / Rowcount() if you're not careful
-func (q *QueryStatement) Limit(offset, rowcount int) *QueryStatement {
+func (q *QueryStatement) Limit(offset, rowcount int64) *QueryStatement {
 	q.Offset(offset)
 	q.Rowcount(rowcount)
 	return q
@@ -203,12 +216,17 @@ func (q *QueryStatement) Assemble() (string, error) {
 		}
 	}
 
+	if q.hasOrderBy {
+		sql.WriteString(" ORDER BY ")
+		sql.WriteString(q.orderby)
+	}
+
 	if q.hasRowcount {
 		sql.WriteString(" LIMIT ")
-		sql.WriteString(strconv.Itoa(q.rowcount))
+		sql.WriteString(strconv.FormatInt(q.rowcount, 10))
 		if q.hasOffset {
 			sql.WriteString(" OFFSET ")
-			sql.WriteString(strconv.Itoa(q.offset))
+			sql.WriteString(strconv.FormatInt(q.offset, 10))
 		}
 	}
 

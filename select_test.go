@@ -41,6 +41,14 @@ func TestAssemble(t *testing.T) {
 			NewQueryStatement().Select([]string{"*"}).From("table").Rowcount(0).Offset(0),
 			"SELECT * FROM table",
 		},
+		{
+			NewQueryStatement().Select([]string{"*"}).From("table").OrderBy("created ASC"),
+			"SELECT * FROM table ORDER BY created ASC",
+		},
+		{
+			NewQueryStatement().Select([]string{"*"}).From("table").OrderBy("created DESC, name ASC"),
+			"SELECT * FROM table ORDER BY created DESC, name ASC",
+		},
 	}
 
 	for _, s := range should {

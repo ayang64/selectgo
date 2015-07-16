@@ -5,10 +5,6 @@ This work is based off my [ColdFusion project](https://github.com/webRat/select)
 - Conform to the same SQL standard across team
 - Write faster query conditionals based on Go logic instead of creating a function for each query.
 
-## What's missing?
-- Tests. :/ I'm working on it.
-- OR statements
-
 ## LICENSE
 Apache
 

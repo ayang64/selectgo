@@ -49,15 +49,27 @@ func TestAssemble(t *testing.T) {
 			NewQueryStatement().Select([]string{"*"}).From("table").OrderBy("created DESC, name ASC"),
 			"SELECT * FROM table ORDER BY created DESC, name ASC",
 		},
+		{
+			NewQueryStatement().Select([]string{"*"}).From("table AS t").InnerJoin("anothertable AS at ON at.id = t.id").OrderBy("created DESC, name ASC"),
+			"SELECT * FROM table AS t INNER JOIN anothertable AS at ON at.id = t.id ORDER BY created DESC, name ASC",
+		},
+		{
+			NewQueryStatement().Select([]string{"*"}).From("table AS t").InnerJoin("anothertable AS at ON at.id = t.id").LeftJoin("thirdtable AS tt ON tt.id = t.id").OrderBy("created DESC, name ASC"),
+			"SELECT * FROM table AS t INNER JOIN anothertable AS at ON at.id = t.id LEFT JOIN thirdtable AS tt ON tt.id = t.id ORDER BY created DESC, name ASC",
+		},
+		{
+			NewQueryStatement().Select([]string{"*"}).From("table AS t").LeftJoin("fourthtable AS ft ON ft.id = t.id").InnerJoin("anothertable AS at ON at.id = t.id").LeftJoin("thirdtable AS tt ON tt.id = t.id").OrderBy("created DESC, name ASC"),
+			"SELECT * FROM table AS t LEFT JOIN fourthtable AS ft ON ft.id = t.id INNER JOIN anothertable AS at ON at.id = t.id LEFT JOIN thirdtable AS tt ON tt.id = t.id ORDER BY created DESC, name ASC",
+		},
 	}
 
 	for _, s := range should {
 		r, err := s.pass.Assemble()
 		if r != s.want {
-			t.Errorf("Failed, expected %q, got %q", s.want, r)
+			t.Errorf("Failed\n expected %q\n got %q", s.want, r)
 		}
 		if err != nil {
-			t.Errorf("Error should be nil, got %v", err)
+			t.Errorf("Error should be nil\n got %v", err)
 		}
 	}
 }

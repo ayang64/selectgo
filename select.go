@@ -15,6 +15,8 @@ var (
 const (
 	andState = iota
 	orState
+	innerJoinState
+	leftJoinState
 )
 
 // QueryStatement is a simple container that builds out a simple select statement that's eventually going to grow.
@@ -23,7 +25,7 @@ type QueryStatement struct {
 	hasSelection        bool
 	fromtable           string
 	hasTable            bool
-	innerjoins          []string
+	conditionalJoins    []jointype
 	hasJoins            bool
 	where               string
 	hasWhere            bool
@@ -73,14 +75,29 @@ func (q *QueryStatement) From(table string) *QueryStatement {
 	return q
 }
 
-// InnerJoin continues to add an inner join to the where statement
+// InnerJoin continues to add an inner join to the sql statement
 func (q *QueryStatement) InnerJoin(join string) *QueryStatement {
 	if len(join) > 0 {
 		q.hasJoins = true
-		q.innerjoins = append(q.innerjoins, join)
+		q.addJoin(innerJoinState, join)
 	}
 
 	return q
+}
+
+// LeftJoin continues to add an left join to the sql statement
+func (q *QueryStatement) LeftJoin(join string) *QueryStatement {
+	if len(join) > 0 {
+		q.hasJoins = true
+		q.addJoin(leftJoinState, join)
+	}
+
+	return q
+}
+
+// InnerJoin continues to add an inner join to the where statement
+func (q *QueryStatement) addJoin(jtype int, value string) {
+	q.conditionalJoins = append(q.conditionalJoins, jointype{jtype: jtype, value: value})
 }
 
 // Where sets the columns to be selected
@@ -119,6 +136,11 @@ func (q *QueryStatement) addWhereConditional(ctype int, value string) {
 
 type wheretype struct {
 	ctype int
+	value string
+}
+
+type jointype struct {
+	jtype int
 	value string
 }
 
@@ -187,13 +209,16 @@ func (q *QueryStatement) Assemble() (string, error) {
 
 	// Assemble INNER JOINS
 	if q.hasJoins {
-		sql.WriteString(" INNER JOIN ")
-		numnOfJoins := len(q.innerjoins) - 1
-		for i, ij := range q.innerjoins {
-			sql.WriteString(ij)
-			if i != numnOfJoins {
-				sql.WriteString(" INNER JOIN ")
+		for _, cj := range q.conditionalJoins {
+			switch cj.jtype {
+			case innerJoinState:
+				sql.WriteString(" INNER ")
+
+			case leftJoinState:
+				sql.WriteString(" LEFT ")
 			}
+			sql.WriteString("JOIN ")
+			sql.WriteString(cj.value)
 		}
 	}
 

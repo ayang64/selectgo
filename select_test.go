@@ -54,6 +54,10 @@ func TestAssemble(t *testing.T) {
 			"SELECT * FROM table AS t INNER JOIN anothertable AS at ON at.id = t.id ORDER BY created DESC, name ASC",
 		},
 		{
+			NewQueryStatement().Select([]string{"*"}).From("table AS t").InnerJoin("anothertable AS at ON at.id = t.id").InnerJoin("yetanothertable AS yat ON yat.id = at.id").OrderBy("created DESC, name ASC"),
+			"SELECT * FROM table AS t INNER JOIN anothertable AS at ON at.id = t.id INNER JOIN yetanothertable AS yat ON yat.id = at.id ORDER BY created DESC, name ASC",
+		},
+		{
 			NewQueryStatement().Select([]string{"*"}).From("table AS t").InnerJoin("anothertable AS at ON at.id = t.id").LeftJoin("thirdtable AS tt ON tt.id = t.id").OrderBy("created DESC, name ASC"),
 			"SELECT * FROM table AS t INNER JOIN anothertable AS at ON at.id = t.id LEFT JOIN thirdtable AS tt ON tt.id = t.id ORDER BY created DESC, name ASC",
 		},

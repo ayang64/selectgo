@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	errSelectNoSelect       = errors.New("No Select statement prepared.")
-	errSelectContainsBlanks = errors.New("Select statement contains blanks")
+	errSelectNoSelect       = errors.New("no select statement prepared")
+	errSelectContainsBlanks = errors.New("select statement contains blanks")
 )
 
 const (
@@ -33,11 +33,11 @@ type QueryStatement struct {
 	orderby             string
 	conditionalWhere    []wheretype
 	hasConditionalWhere bool
-	offset              int64
+	offset              int
 	hasOffset           bool
 	useOffset           bool
 	hasRowcount         bool
-	rowcount            int64
+	rowcount            int
 	useRowcount         bool
 }
 
@@ -155,7 +155,7 @@ func (q *QueryStatement) OrderBy(orderby string) *QueryStatement {
 }
 
 // Offset adds offset to the query
-func (q *QueryStatement) Offset(offset int64) *QueryStatement {
+func (q *QueryStatement) Offset(offset int) *QueryStatement {
 	if offset > 0 {
 		q.hasOffset = true
 		q.offset = offset
@@ -164,7 +164,7 @@ func (q *QueryStatement) Offset(offset int64) *QueryStatement {
 }
 
 // Rowcount adds rowcount to the query
-func (q *QueryStatement) Rowcount(rowcount int64) *QueryStatement {
+func (q *QueryStatement) Rowcount(rowcount int) *QueryStatement {
 	if rowcount > 0 {
 		q.hasRowcount = true
 		q.rowcount = rowcount
@@ -173,7 +173,7 @@ func (q *QueryStatement) Rowcount(rowcount int64) *QueryStatement {
 }
 
 // Limit page and number of things we're limiting it too. This will overwrite Offset() / Rowcount() if you're not careful
-func (q *QueryStatement) Limit(offset, rowcount int64) *QueryStatement {
+func (q *QueryStatement) Limit(offset, rowcount int) *QueryStatement {
 	q.Offset(offset)
 	q.Rowcount(rowcount)
 	return q
@@ -248,10 +248,10 @@ func (q *QueryStatement) Assemble() (string, error) {
 
 	if q.hasRowcount {
 		sql.WriteString(" LIMIT ")
-		sql.WriteString(strconv.FormatInt(q.rowcount, 10))
+		sql.WriteString(strconv.Itoa(q.rowcount))
 		if q.hasOffset {
 			sql.WriteString(" OFFSET ")
-			sql.WriteString(strconv.FormatInt(q.offset, 10))
+			sql.WriteString(strconv.Itoa(q.offset))
 		}
 	}
 

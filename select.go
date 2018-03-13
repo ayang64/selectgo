@@ -39,6 +39,8 @@ type QueryStatement struct {
 	hasRowcount         bool
 	rowcount            int
 	useRowcount         bool
+	hasGroupBy          bool
+	groupBy             string
 }
 
 // NewQueryStatement returns a new instance of the select statement
@@ -107,6 +109,15 @@ func (q *QueryStatement) Where(where string) *QueryStatement {
 		q.where = where
 	}
 
+	return q
+}
+
+// GroupBy will append a group by statement to the query
+func (q *QueryStatement) GroupBy(groupBy string) *QueryStatement {
+	if len(groupBy) > 0 {
+		q.groupBy = groupBy
+		q.hasGroupBy = true
+	}
 	return q
 }
 
@@ -239,6 +250,11 @@ func (q *QueryStatement) Assemble() (string, error) {
 				sql.WriteString(cw.value)
 			}
 		}
+	}
+
+	if q.hasGroupBy {
+		sql.WriteString(" GROUP BY ")
+		sql.WriteString(q.groupBy)
 	}
 
 	if q.hasOrderBy {
